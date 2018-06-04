@@ -66,9 +66,6 @@ class PolitenessExtractor():
 				print(self.doc_mappings[doc.id][1])
 			return self.doc_mappings[doc.id]
 
-		sections = doc.sections
-		statements = sections[0].statements
-		sentences = statements[0].sentences
 		apologize_comm=ask_agency_comm=give_agency_comm=gratitude_comm=please_comm=0
 		apologize_inm=ask_agency_inm=give_agency_inm=gratitude_inm=please_inm=0
 		commissioner = None
