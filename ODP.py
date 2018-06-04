@@ -87,25 +87,25 @@ def get_dialog_acts(dialog_annotations):
 
 def get_pos(dialogArr):
 
-	pos_tags = []
+	pos_tags_train = []
 
 	for dialog in dialogArr:
-		pos_tags.append(nltk.pos_tag(word_tokenize(dialog)))
+		pos_tags_train.append(nltk.pos_tag(word_tokenize(dialog)))
 
-	only_pos_tags = []
+	only_pos_tags_train = []
 
-	for pos_list in pos_tags:
-		only_pos_tags.append(' '.join([x[1] for x in pos_list]))
+	for pos_list in pos_tags_train:
+		only_pos_tags_train.append(' '.join([x[1] for x in pos_list]))
 
 	# return in stringified format - for sklearn ... might not have to do this
-	return only_pos_tags
+	return only_pos_tags_train
 
 
-def get_mixed(dialogs, pos_tags):
+def get_mixed(dialogs, pos_tags_train):
 	mixed = []
 
 	# first tokenize both - then iterate through each to create mixed
-	for dialog, pos_tag in zip(dialogs, pos_tags):
+	for dialog, pos_tag in zip(dialogs, pos_tags_train):
 		tokenized_dialog = word_tokenize(dialog)
 		tokenized_pos = [x[1] for x in nltk.pos_tag(tokenized_dialog)]
 
@@ -133,58 +133,64 @@ def preprocess():
 	dialog_test, dialog_annotations_test = readInXMLs('/Users/MichaelSmith/Desktop/PowerAnnotations_V1.0/AnnotatedThreads/Test')
 
 	# combine dialog, dialog_annotations
-	dialog_full = dialog_train + dialog_test
-	dialog_annotations_full = dialog_annotations_train + dialog_annotations_test 
+	#dialog_train = dialog_train + dialog_test
+	#dialog_annotations_train = dialog_annotations_train + dialog_annotations_test 
 
 	# randomize - this doesn't feel scientifically accurate - might want to remove.
-	# dialog_full, dialog_annotations_full = shuffle(dialog_full, dialog_annotations_full, random_state = 42)
+	# dialog_train, dialog_annotations_train = shuffle(dialog_train, dialog_annotations_train, random_state = 42)
 
 	# get yvals for training and 
-	Y, dialog_full = get_yvals(dialog_full)
+	y_train, dialog_train = get_yvals(dialog_train)
+	y_test, dialog_test = get_yvals(dialog_test)
 
 	# get dialog acts
-	dialog_acts_full = get_dialog_acts(dialog_annotations_full)
+	dialog_acts_train = get_dialog_acts(dialog_annotations_train)
+	dialog_acts_test = get_dialog_acts(dialog_annotations_test)
 
 	# get part of speech tags
-	pos_tags = get_pos(dialog_full)
+	pos_tags_train = get_pos(dialog_train)
+	pos_tags_test = get_pos(dialog_test)
 
 	# get mixed class
-	mixed_train = get_mixed(dialog_full, pos_tags) 
+	mixed_train = get_mixed(dialog_train, pos_tags_train)
+	mixed_test = get_mixed(dialog_test, pos_tags_test) 
 
 	# Vectorize the data - into sparse matricies 
 	pos_vectorizer = CountVectorizer(tokenizer=my_tokenizer, ngram_range=(2, 2))
-	pos_matrix = pos_vectorizer.fit_transform(pos_tags)
+	pos_matrix_train = pos_vectorizer.fit_transform(pos_tags_train)
+	pos_matrix_test = pos_vectorizer.transform(pos_tags_test)
 
-	mixed_vectorizer = CountVectorizer(tokenizer=my_tokenizer, ngram_range=(4,4))
-	mixed_matrix = mixed_vectorizer.fit_transform(mixed_train)
+	mixed_vectorizer = CountVectorizer(ngram_range=(4,4))
+	mixed_matrix_train = mixed_vectorizer.fit_transform(mixed_train)
+	mixed_matrix_test = mixed_vectorizer.transform(mixed_test)
 
 	# sparse concatenation
-	pos_matrix = coo_matrix(pos_matrix)
-	mixed_matrix = coo_matrix(mixed_matrix)
 
 	# this section one-hot encodes the dialog acts into a matrix
+
 	le = LabelEncoder()
-	dialog_acts_full = le.fit_transform(dialog_acts_full)
+	dialog_acts_train = le.fit_transform(dialog_acts_train)
+	dialog_acts_test = le.transform(dialog_acts_test)
 
 	temp_matr1 = []
-	for dialog_act in dialog_acts_full:
+	for dialog_act in dialog_acts_train:
 		temp_matr1.append([dialog_act])
+	temp_matr2 = []
+	for dialog_act in dialog_acts_test:
+		temp_matr2.append([dialog_act])
 
 	enc = OneHotEncoder()
-	dialog_acts_full = enc.fit_transform(temp_matr1)
+	dialog_acts_train = enc.fit_transform(temp_matr1)
+	dialog_acts_test = enc.transform(temp_matr2)
 
 	# this concatenates the matricies together
-	X = hstack([pos_matrix, mixed_matrix, dialog_acts_full]).toarray()
-
+	X_train = hstack([pos_matrix_train, mixed_matrix_train, dialog_acts_train]).toarray()
+	X_test = hstack([pos_matrix_test, mixed_matrix_test, dialog_acts_test]).toarray()
 
 	scalar = StandardScaler(with_mean=False)
-	X = scalar.fit_transform(X)
+	X_train = scalar.fit_transform(X_train)
+	X_test = scalar.transform(X_test)
 
-	# separate back into test and train:
-	X_train = X[0:1091, :]
-	X_test = X[1091:, :]
-	y_train = Y[0:1091]
-	y_test = Y[1091:]
 
 	return X_train, X_test, y_train, y_test
 
@@ -195,6 +201,7 @@ def main():
 
 	clf = SVC(kernel='linear', probability=True)
 	clf.fit(X_train, y_train)
+
 	y_pred = clf.predict(X_test)
 	print("F1-score: ", f1_score(y_test, y_pred))
 
@@ -202,6 +209,8 @@ def main():
 	clf.fit(X_train, y_train)
 	y_pred = clf.predict(X_test)
 	print("F1-score: ", f1_score(y_test, y_pred))
+
+	
 
 
 
