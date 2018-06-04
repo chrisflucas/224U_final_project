@@ -38,6 +38,10 @@ class PolitenessExtractor():
 			We maintain separate counts for each lexicon and then increment the total number 
 			of occurrences of those lexical words over the entire document for either the inmate
 			or the commissioner speaker. 
+
+			@param doc: Parole Hearing document
+			@param print_stats (opt): boolean
+			@return tuple: dict of commissioner lexicon counts, dict of inmate lexicon counts
 		'''
 
 		def _determine_speaker(sentence, commissioner):
@@ -112,7 +116,10 @@ class PolitenessExtractor():
 			inmate apology, inmate ask agency, etc.)
 
 			Stores the values in self.commissioner_thresholds and self.inmate_thresholds
-			so that the Extractor can start using these values to featurize documents. 
+			so that the Extractor can start using these values to featurize documents.
+
+			@param self: PolitenessExtractor
+			@return None 
 		'''
 		commissioner_total_counts = collections.defaultdict(lambda: 0.0)
 		inmate_total_counts = collections.defaultdict(lambda: 0.0)
@@ -172,10 +179,13 @@ class PolitenessExtractor():
 
 
 	def print_report(self, speaker, apologize, ask_agency, give_agency, \
-						gratitude, please, print_stats):
+						gratitude, please):
 		'''
 			Given the politeness stats and speaker (commissioner or inmate typically), this prints
 			an easily digestible snapshot of the lexical counts. 
+
+			@param speaker: string
+			@param apologize ... please: int
 		'''
 		intro = '='*25 + ' ' + speaker + ' ' + '='*25
 		print( intro )
@@ -192,12 +202,16 @@ class PolitenessExtractor():
 		'''
 			Given the politeness stats, speaker and option to print extra statistic 
 			information, this method creates a map representing the counts of each 
-			kind of 'polite' language. 
+			kind of 'polite' language.
+
+			@param speaker: string
+			@param apologize ... please: int
+			@return dict mapping lexicon name to int occurrence count. 
 		'''
 
 		if print_stats:
 			self.print_report(speaker, apologize, ask_agency, give_agency, \
-							gratitude, please, print_stats)
+							gratitude, please)
 
 		return {
 			'apologize': apologize,
