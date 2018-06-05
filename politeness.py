@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 import sys, collections
 sys.path.append("/Users/cflucas/cs224U_final_project/snorkel")
-import os
+import os, csv
 import numpy as np
 import re
 from snorkel import SnorkelSession
@@ -43,6 +43,8 @@ class PolitenessExtractor():
 			@param print_stats (opt): boolean
 			@return tuple: dict of commissioner lexicon counts, dict of inmate lexicon counts
 		'''
+
+		print( 'Computing score for doc: {}'.format(doc.id) )
 
 		def _determine_speaker(sentence, commissioner):
 			''' Decides if we need to toggle our understanding of who is speaking '''
@@ -118,6 +120,7 @@ class PolitenessExtractor():
 			@param self: PolitenessExtractor
 			@return None 
 		'''
+		print( 'Calculating threshold ... ' )
 		commissioner_total_counts = collections.defaultdict(lambda: 0.0)
 		inmate_total_counts = collections.defaultdict(lambda: 0.0)
 
@@ -222,7 +225,6 @@ class PolitenessExtractor():
 if __name__ == '__main__':
 	session = SnorkelSession()
 	docs = session.query(ReconDocument)
-	print(docs)
 	i = 0
 	p = PolitenessExtractor()
 
@@ -239,8 +241,25 @@ if __name__ == '__main__':
 			i+=1
 		except:
 			print('i is: {}'.format(i))
-			p.calculate_feature_thresholds()
 			break
+
+	headers = [ 'doc_id', 'apologize_comm', 'ask_agency_comm', 'give_agency_comm', 'gratitude_comm', 'please_comm', \
+				'apologize_inm', 'ask_agency_inm', 'give_agency_inm', 'gratitude_inm', 'please_inm' ]
+
+	p.calculate_feature_thresholds()
+	
+	with open('politeness.csv', 'w') as csvfile: 
+		writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(headers)
+		for j in range(i):
+			try:
+				comm, inm = p.featurize_document(docs[j])
+				row = [docs[j].id, comm['apologize'], comm['ask_agency'], comm['give_agency'], comm['gratitude'], comm['please'], \
+						inm['apologize'], inm['ask_agency'], inm['give_agency'], inm['gratitude'], inm['please']]
+				writer.writerow(row)
+			except:
+				break
+
 
 
 
