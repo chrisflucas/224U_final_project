@@ -72,10 +72,19 @@ class PolitenessExtractor():
 		apologize_inm=ask_agency_inm=give_agency_inm=gratitude_inm=please_inm=0
 		commissioner = None
 
+		decision_section = False
+
+		#sections = [section for section in doc.sections if section.name == 'hearing']
+
 		for section in doc.sections:
 			for statement in section.statements:
 				for sentence in statement.sentences:
+
 					joined_sentence = ' '.join(sentence.words)
+					if 'DECISION PAGE' in joined_sentence: 
+						decision_section = True
+						break
+
 					commissioner = _determine_speaker(joined_sentence, commissioner)
 					if commissioner == None: continue
 
@@ -97,6 +106,8 @@ class PolitenessExtractor():
 						give_agency_inm += give_agency_count
 						gratitude_inm += gratitude_count
 						please_inm += please_count
+				if decision_section: break
+			if decision_section: break
 
 		commissioner_report = self.generate_report('COMMISSIONER', apologize_comm, ask_agency_comm, \
 									give_agency_comm, gratitude_comm, please_comm, print_stats)
@@ -144,8 +155,8 @@ class PolitenessExtractor():
 		print( 'Done calculating averages, use these as thresholds for '+\
 				'featurizing politeness as a function of apologize, ask_agency, etc.' )
 
-		print(self.commissioner_thresholds)
-		print(self.inmate_thresholds)
+		print( self.commissioner_thresholds )
+		print( self.inmate_thresholds )
 
 	def featurize_document(self, doc):
 		'''
@@ -235,6 +246,7 @@ if __name__ == '__main__':
 		i.e. for i in range(len(docs)): does not work because
 			 len(docs) is not a thing...
 	'''
+
 	while True:
 		try:
 			p.compute_score(docs[i], print_stats=False)
@@ -247,7 +259,7 @@ if __name__ == '__main__':
 				'apologize_inm', 'ask_agency_inm', 'give_agency_inm', 'gratitude_inm', 'please_inm' ]
 
 	p.calculate_feature_thresholds()
-	
+
 	with open('politeness.csv', 'w') as csvfile: 
 		writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 		writer.writerow(headers)

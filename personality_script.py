@@ -20,7 +20,7 @@ import string
 from nltk.stem import PorterStemmer
 from nltk.tokenize import sent_tokenize, word_tokenize
 import sys, collections
-sys.path.append("/Users/raminahmari/Classes/CS 224U/snorkel")
+sys.path.append("/Users/cflucas/cs224U_final_project/snorkel")
 import os
 import re
 from snorkel import SnorkelSession
@@ -218,8 +218,10 @@ class LIWC_Extractor():
 		commissioner_sentences = []
 		inmate_sentences = []
 		old_progress = -10
+		decision_section = False
 
 		for idx, section in enumerate(doc.sections):
+
 			print("TOTAL PROGRESS: ", end=" ")
 			print("" + str(int((idx+1)*100/float(len(doc.sections)))) + "%")
 			print("SECTION " + str(idx) + " PROGRESS:")
@@ -230,6 +232,9 @@ class LIWC_Extractor():
 					old_progress = progress
 				for sentence in statement.sentences:
 					joined_sentence = ' '.join(sentence.words)
+					if 'DECISION PAGE' in joined_sentence: 
+						decision_section = True
+						break
 					commissioner = self._determine_speaker(joined_sentence, commissioner)
 					if commissioner == None: continue
 
@@ -238,7 +243,10 @@ class LIWC_Extractor():
 						commissioner_sentences.append(joined_sentence)
 					else:
 						inmate_sentences.append(joined_sentence)
+				if decision_section: break
 			old_progress = 0
+			if decision_section: break
+
 	
 		#self.doc_mappings[doc.id] = (commissioner_report, inmate_report)
 		print("\n")
